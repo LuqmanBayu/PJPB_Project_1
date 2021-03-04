@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class CustomUser(AbstractUser):
     user_type_data=((1,"Admin"),(2,"Lecturer"),(3,"Student"))
@@ -47,6 +49,27 @@ class FeedBackLecturer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now_add=True)
     objects = models.Manager()
+
+@receiver(post_save,sender=CustomUser)
+def create_user_profile(sender,instance,created,**kwargs):
+    if created:
+        if instance.user_type==1:
+            Admin.objects.create(admin=instance)
+        if instance.user_type==2:
+            Lecturer.objects.create(admin=instance,address="")
+        if instance.user_type==3:
+            Student.objects.create(admin=instance,course_id=Courses.objects.get(id=1),
+                                    address="",profile_pic="",gender="")
+
+@receiver(post_save,sender=CustomUser)
+def save_user_profile(sender,instance,**kwargs):
+    if instance.user_type==1:
+        instance.admin.save()
+    if instance.user_type==2:
+        instance.lecturer.save()
+    if instance.user_type==3:
+        instance.student.save()
+
 
 
 
